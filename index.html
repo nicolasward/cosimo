@@ -5,7 +5,27 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Bonheur+Royale&display=swap" rel="stylesheet">
+<!-- The 3D can's modules and Draco decoder stream from jsdelivr; warm that
+     connection during HTML parse so the module waterfall starts a round-trip
+     sooner. -->
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
+
+<!-- Load the fonts without blocking first paint: display=swap already paints
+     fallback text immediately then swaps, so there is no reason for the request
+     itself to sit on the critical path. No-JS keeps a plain stylesheet link. -->
+<link rel="preload" as="style" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Bonheur+Royale&display=swap" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&family=Bonheur+Royale&display=swap"></noscript>
+
+<!-- Kick off the heavy 3D fetches in parallel with three.js instead of waiting
+     for the whole module graph to resolve first. The core module is CORS
+     (crossorigin), the same-origin assets are plain fetch preloads. The can
+     geometry gates whether anything shows; the HDR is only a reflection upgrade
+     (a fallback studio env renders until it lands), so it fetches low-priority. -->
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" crossorigin>
+<link rel="preload" as="fetch" href="can_blank_grey.glb">
+<link rel="preload" as="fetch" href="basket_c.glb">
+<link rel="preload" as="fetch" href="studio.hdr" fetchpriority="low">
 
 <!-- js flips the page into "start as a dot, then iris open" mode. Without it
      (or under reduced motion) the gradient is simply full-screen from the off. -->
@@ -1291,7 +1311,15 @@ document.documentElement.style.setProperty('--pal-ink', INKS[0]);   // initial C
   };
   PALETTE_CTRL.next = function(){ PALETTE_CTRL.set((curIdx + 1) % PALETTES.length); };
 
+  // Only re-measure when the viewport actually changes rather than reading the
+  // canvas box every frame: that read forces a layout flush, and the can's tick
+  // loop writes inline styles each frame, so measuring here every frame meant a
+  // forced reflow on every single animation frame.
+  let resizePending = true;
+  window.addEventListener('resize', function(){ resizePending = true; }, { passive: true });
   function resize(){
+    if (!resizePending) return;
+    resizePending = false;
     // Cap DPR at 2. A full-screen shader at DPR 3 on a phone is a
     // battery fire for zero visible gain.
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -1440,6 +1468,7 @@ if (stage && scroller && canvas && frame) {
     hdr.mapping = THREE.EquirectangularReflectionMapping;
     scene.environment = pmrem.fromEquirectangular(hdr).texture;
     hdr.dispose();
+    forceRender = true;   // the reflections just changed; paint once even if idle
   }, undefined, function (e){ console.warn('studio.hdr failed; keeping fallback', e); });
 
   // A gentle key light for an extra specular kick; the HDR does the rest.
@@ -1455,6 +1484,10 @@ if (stage && scroller && canvas && frame) {
   const group = new THREE.Group(); scene.add(group);
   const modelSize = new THREE.Vector3(2.4, 2.4, 2.4);
   let ready = false;
+  // Set whenever something outside the per-frame scroll/bob changes the scene
+  // (resize, model load, env swap) so the dirty-render loop paints one frame
+  // even if the can is otherwise sitting still.
+  let forceRender = true;
 
   const steel     = new THREE.MeshStandardMaterial({ color: 0xd7dde3, metalness: 1.0, roughness: 0.13, envMapIntensity: 1.8 });
   const steelDark = new THREE.MeshStandardMaterial({ color: 0x99a1aa, metalness: 1.0, roughness: 0.22, envMapIntensity: 1.6 });
@@ -1550,6 +1583,7 @@ if (stage && scroller && canvas && frame) {
     can.traverse(function (o){ if (o.isMesh && o.material) o.material.envMapIntensity = 1.0; });   // keep the can's own matte label texture — not metallic
     addObject(can, 2);
     if (curIdx === 2) objects[2].visible = true;         // in case that card is already showing
+    forceRender = true;                                  // paint the newly-loaded model even if idle
   }, undefined, function (e){ console.warn('can_blank_grey.glb failed', e); });
   // The shopping basket for customer experience — repainted metallic (was matte).
   gltf.load('basket_c.glb', function (res){
@@ -1558,6 +1592,7 @@ if (stage && scroller && canvas && frame) {
     basket.traverse(function (o){ if (o.isMesh) o.material = metal; });
     addObject(basket, 1);
     if (curIdx === 1) objects[1].visible = true;
+    forceRender = true;                                  // paint the newly-loaded model even if idle
   }, undefined, function (e){ console.warn('basket_c.glb failed', e); });
 
   // ---------- fit the camera to the model within the stage aspect ----------
@@ -1577,6 +1612,7 @@ if (stage && scroller && canvas && frame) {
     camera.aspect = w / h; camera.updateProjectionMatrix();
     measureOutline();
     fit();
+    forceRender = true;   // repaint once even if the can is otherwise idle
   }
   window.addEventListener('resize', resize);   // first call happens below, once the outline refs exist
 
@@ -1783,6 +1819,11 @@ if (stage && scroller && canvas && frame) {
 
   // Timeline: the scroll is split into N service segments + 1 outro segment.
   const SVC = N / (N + 1);                          // fraction of scroll spent on services
+  // Dirty-render bookkeeping: the can is the only thing three.js draws, so the
+  // scene only needs a redraw when the can moves (scroll changes, or the idle
+  // bob is running) or crosses the visible/hidden edge. Everything else on
+  // screen (frame, copy, COSIMO) is DOM/SVG and never needs a GL frame.
+  let lastPr = -1, wasCanShown = false;
   function tick(t){
     const pr = reduced ? 0.5 / (N + 1) : progress();
     const sv = clamp(pr / SVC, 0, 1) * N;           // 0..N across the service segments
@@ -1901,7 +1942,18 @@ if (stage && scroller && canvas && frame) {
       colo.style.opacity = landed ? '1' : '0';
     }
 
-    renderer.render(scene, camera);
+    // Redraw only when the can's transform/visibility could have changed. When
+    // it's not reduced-motion, the can bobs continuously while visible, so this
+    // still draws every frame there (no regression); the savings land in the
+    // outro (can hidden -> nothing to draw) and for reduced-motion visitors
+    // sitting still (no bob, no scroll -> the scene is already correct).
+    const canShown = group.visible;
+    const canMoved = canShown && (!reduced || pr !== lastPr);
+    if (!ready || canMoved || wasCanShown !== canShown || forceRender) {
+      renderer.render(scene, camera);
+      forceRender = false;
+    }
+    wasCanShown = canShown; lastPr = pr;
     requestAnimationFrame(tick);
   }
   requestAnimationFrame(tick);
