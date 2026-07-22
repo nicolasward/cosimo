@@ -647,13 +647,16 @@
     .hero-sub br { display: none; }                  /* the hard break orphans "London." at this width */
     .hl-caret { display: none; }
     /* Mobile entrance cascade: the headline rises first (~2.7s), then each
-       paragraph in turn, then the CTA, then the dot. The steps are spaced ~0.6s
-       apart so the copy lands deliberately rather than feeling rushed. */
-    html.intro .hero-sub .sub.reveal:nth-of-type(1) { animation-delay: 3.35s; }
-    html.intro .hero-sub .sub.reveal:nth-of-type(2) { animation-delay: 3.95s; }
-    html.intro .hero-sub .sub.reveal:nth-of-type(3) { animation-delay: 4.55s; }
-    html.intro .ctas.reveal    { animation-delay: 5.15s; }
-    html.intro .credo-toggle   { animation-delay: 5.75s; }
+       paragraph in turn, then the CTA, then the dot. The first line waits for
+       the title to settle, the steps are spaced ~0.7s apart, and the fade
+       itself is slowed to 1.1s so the copy eases in rather than feeling rushed. */
+    html.intro .hero-sub .sub.reveal,
+    html.intro .ctas.reveal { animation-duration: 1.1s; }   /* slower fade; the dot keeps its snappy pop */
+    html.intro .hero-sub .sub.reveal:nth-of-type(1) { animation-delay: 3.9s; }
+    html.intro .hero-sub .sub.reveal:nth-of-type(2) { animation-delay: 4.6s; }
+    html.intro .hero-sub .sub.reveal:nth-of-type(3) { animation-delay: 5.3s; }
+    html.intro .ctas.reveal    { animation-delay: 6s; }
+    html.intro .credo-toggle   { animation-delay: 6.7s; }
     .services-mobile { display: none; }
     .conclusion { align-items: flex-start; text-align: left; }
     /* The colophon keeps the desktop vertical treatment on mobile (aligned to the
