@@ -346,9 +346,54 @@
      can't change the line width. */
   .tword { display: inline-block; }
   .tchar { display: inline-block; text-align: center; }
-  .frame-code { position: absolute; right: 5%; bottom: 4.5%; display: flex; align-items: flex-end; gap: 0.7rem; }
-  .frame-bars { display: flex; align-items: stretch; gap: 2px; height: 30px; }
+  /* The barcode doubles as a CTA: on hover/focus (desktop) it cross-dissolves
+     into "Start a project". Bars + label are stacked in one grid cell, both
+     anchored bottom-right, so there is no layout shift as they swap. The link
+     opts back into pointer events (the frame itself is pointer-events:none). */
+  .frame-code {
+    position: absolute; right: 5%; bottom: 4.5%;
+    display: grid; justify-items: end; align-items: end;
+    padding: 0.7rem 0.1rem 0.1rem 0.9rem;   /* comfortable hit area, grows up/left */
+    color: var(--ink); text-decoration: none;
+    pointer-events: auto; cursor: pointer;
+  }
+  .frame-code > * { grid-area: 1 / 1; }     /* overlap bars and label */
+  .frame-bars {
+    display: flex; align-items: stretch; gap: 2px; height: 30px;
+    transition: opacity 0.35s ease, transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  }
   .frame-bars i { display: block; background: var(--ink); }
+  .frame-cta {
+    position: relative;
+    display: inline-flex; align-items: center; gap: 0.4em; white-space: nowrap;
+    font-family: "Figtree", system-ui, sans-serif; font-weight: 600;
+    font-size: clamp(0.85rem, 1.7vw, 1.02rem); letter-spacing: -0.005em; line-height: 30px;
+    color: var(--ink);
+    opacity: 0; transform: translateX(8px);
+    transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .frame-cta-arrow { display: inline-block; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+  /* draw an underline in as it appears */
+  .frame-cta::after {
+    content: ""; position: absolute; left: 0; right: 0; bottom: -0.15em; height: 1.25px;
+    background: currentColor; transform: scaleX(0); transform-origin: right center;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  @media (hover: hover) and (pointer: fine) {
+    .frame-code:hover .frame-bars,
+    .frame-code:focus-visible .frame-bars { opacity: 0; transform: translateX(-10px); }
+    .frame-code:hover .frame-cta,
+    .frame-code:focus-visible .frame-cta { opacity: 1; transform: none; }
+    .frame-code:hover .frame-cta::after,
+    .frame-code:focus-visible .frame-cta::after { transform: scaleX(1); transform-origin: left center; }
+    .frame-code:hover .frame-cta-arrow,
+    .frame-code:focus-visible .frame-cta-arrow { transform: translate(2px, -2px); }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .frame-bars, .frame-cta, .frame-cta-arrow, .frame-cta::after { transition-duration: 0.001s; }
+    .frame-bars { transition: opacity 0.2s ease; }
+    .frame-code:hover .frame-bars, .frame-code:focus-visible .frame-bars { transform: none; }
+  }
   .frame-vol { font-size: 0.7rem; letter-spacing: 0.1em; color: rgba(255, 255, 255, 0.82); }
   .frame-text { position: absolute; inset: 0; }
   html.js .can-stage     { opacity: 0; }
@@ -383,9 +428,9 @@
     display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
     padding: 0.65rem 0.55rem;
     border-radius: 1.1rem;
-    background: rgba(10, 30, 60, 0.28);
-    -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
-    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22), 0 10px 30px rgba(4, 16, 40, 0.28);
+    background: rgba(255, 255, 255, 0.20);   /* light frosted glass */
+    -webkit-backdrop-filter: blur(16px) saturate(1.3); backdrop-filter: blur(16px) saturate(1.3);
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.5), 0 8px 26px rgba(20, 24, 44, 0.16);
     transform-origin: top center;
     transform: translateY(-8px) scale(0.6);
     opacity: 0; pointer-events: none;
@@ -399,7 +444,7 @@
     transition: transform 0.18s ease, box-shadow 0.18s ease;
   }
   @media (hover: hover) { .theme-swatch:hover { transform: scale(1.14); } }
-  .theme-swatch.on { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95); }
+  .theme-swatch.on { box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.95), 0 0 0 3px rgba(28, 36, 58, 0.5); }
 
   /* Desktop: the picker opens as a HORIZONTAL row of blobs, each springing out
      of the dot in turn (Material speed-dial). The container itself is inert — the
@@ -410,9 +455,9 @@
       flex-direction: row-reverse;
       gap: 0.55rem; padding: 0.5rem 0.6rem;
       border-radius: 999px;
-      background: rgba(9, 24, 48, 0.36);  /* a dark backing lifts every swatch off the field */
-      -webkit-backdrop-filter: blur(16px) saturate(1.25); backdrop-filter: blur(16px) saturate(1.25);
-      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22), 0 10px 28px rgba(4, 16, 40, 0.3);
+      background: rgba(255, 255, 255, 0.22);  /* light frosted glass — a milky pane over the field */
+      -webkit-backdrop-filter: blur(18px) saturate(1.4); backdrop-filter: blur(18px) saturate(1.4);
+      box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.55), 0 8px 24px rgba(20, 24, 44, 0.18);
       transform-origin: right center;
       transform: translateX(6px) scale(0.88);
       opacity: 0; pointer-events: none;
@@ -431,7 +476,7 @@
       transition-delay: calc(var(--i) * 50ms);                    /* unfold: nearest the dot first */
     }
     html.theme-open .theme-swatch.on,
-    .theme-swatch.on { box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.95); }
+    .theme-swatch.on { box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.95), 0 0 0 3px rgba(28, 36, 58, 0.5); }
   }
 
   /* ---------------- Theme dot ----------------
@@ -749,8 +794,11 @@
             <div class="frame-name">Creative production</div>
             <div class="frame-desc">Concept, art direction, content at scale.</div>
           </div>
-          <div class="frame-code"><span class="frame-bars"></span></div>
         </div>
+        <a class="frame-code" href="mailto:nico@cosimo.studio" aria-label="Start a project">
+          <span class="frame-bars" aria-hidden="true"></span>
+          <span class="frame-cta" aria-hidden="true">Start a project<span class="frame-cta-arrow">&#8599;</span></span>
+        </a>
       </div>
     </div>
     <div class="conclusion" aria-hidden="true">
@@ -1672,6 +1720,7 @@ if (stage && scroller && canvas && frame) {
   const elDesc = frame.querySelector('.frame-desc');
   const elBars = frame.querySelector('.frame-bars');
   const elText = frame.querySelector('.frame-text');
+  const elCode = frame.querySelector('.frame-code');   // barcode/CTA — a frame sibling of .frame-text now, so it needs the same per-card fade
   const concl  = document.querySelector('.conclusion');
   const mark   = document.querySelector('.cosimo-mark');
   const letters = mark ? Array.prototype.slice.call(mark.querySelectorAll('b')) : [];
@@ -1896,6 +1945,8 @@ if (stage && scroller && canvas && frame) {
     const dist = Math.abs(sv - (nearest + 0.5));
     const fp = smoother(clamp(1 - dist / 0.42, 0, 1));
     elText.style.opacity = String(fp * clamp((border - 0.6) / 0.4, 0, 1) * (1 - undraw));
+    if (elCode) elCode.style.opacity = elText.style.opacity;   // barcode/CTA fades in step with the card copy
+    if (elCode) elCode.style.pointerEvents = (!mobile && parseFloat(elText.style.opacity) > 0.6) ? 'auto' : 'none';  // desktop only, and only once the card is really up
     if (prog){                       // the rail rides the frame's own opacity now
       const vis = clamp(border * 6, 0, 1);
       prog.style.pointerEvents = vis > 0.6 ? 'auto' : 'none';
