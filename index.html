@@ -372,9 +372,14 @@
     opacity: 0; transform: translateX(8px);
     transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .frame-cta-arrow { display: inline-block; transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
-  /* draw an underline in as it appears */
-  .frame-cta::after {
+  .frame-cta-text { position: relative; }   /* the underline spans only the words, stopping at "project" */
+  .frame-cta-arrow {
+    width: 0.82em; height: 0.82em; display: inline-block; flex: none;
+    fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  /* draw an underline in as it appears — under the text only, not the chevron */
+  .frame-cta-text::after {
     content: ""; position: absolute; left: 0; right: 0; bottom: -0.15em; height: 1.25px;
     background: currentColor; transform: scaleX(0); transform-origin: right center;
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
@@ -384,13 +389,13 @@
     .frame-code:focus-visible .frame-bars { opacity: 0; transform: translateX(-10px); }
     .frame-code:hover .frame-cta,
     .frame-code:focus-visible .frame-cta { opacity: 1; transform: none; }
-    .frame-code:hover .frame-cta::after,
-    .frame-code:focus-visible .frame-cta::after { transform: scaleX(1); transform-origin: left center; }
+    .frame-code:hover .frame-cta-text::after,
+    .frame-code:focus-visible .frame-cta-text::after { transform: scaleX(1); transform-origin: left center; }
     .frame-code:hover .frame-cta-arrow,
-    .frame-code:focus-visible .frame-cta-arrow { transform: translate(2px, -2px); }
+    .frame-code:focus-visible .frame-cta-arrow { transform: translateX(3px); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .frame-bars, .frame-cta, .frame-cta-arrow, .frame-cta::after { transition-duration: 0.001s; }
+    .frame-bars, .frame-cta, .frame-cta-arrow, .frame-cta-text::after { transition-duration: 0.001s; }
     .frame-bars { transition: opacity 0.2s ease; }
     .frame-code:hover .frame-bars, .frame-code:focus-visible .frame-bars { transform: none; }
   }
@@ -797,7 +802,7 @@
         </div>
         <a class="frame-code" href="mailto:nico@cosimo.studio" aria-label="Start a project">
           <span class="frame-bars" aria-hidden="true"></span>
-          <span class="frame-cta" aria-hidden="true">Start a project<span class="frame-cta-arrow">&#8599;</span></span>
+          <span class="frame-cta" aria-hidden="true"><span class="frame-cta-text">Start a project</span><svg class="frame-cta-arrow" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></span>
         </a>
       </div>
     </div>
