@@ -365,23 +365,16 @@
   .frame-bars i { display: block; background: var(--ink); }
   .frame-cta {
     position: relative;
-    display: inline-flex; align-items: center; gap: 0.4em; white-space: nowrap;
+    display: inline-flex; align-items: center; gap: 0.18em; white-space: nowrap;
     font-family: "Figtree", system-ui, sans-serif; font-weight: 600;
     font-size: clamp(0.85rem, 1.7vw, 1.02rem); letter-spacing: -0.005em; line-height: 30px;
     color: var(--ink);
     opacity: 0; transform: translateX(8px);
     transition: opacity 0.35s ease, transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
-  .frame-cta-text { position: relative; }   /* the underline spans only the words, stopping at "project" */
   .frame-cta-arrow {
     width: 0.82em; height: 0.82em; display: inline-block; flex: none;
     fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round;
-    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-  /* draw an underline in as it appears — under the text only, not the chevron */
-  .frame-cta-text::after {
-    content: ""; position: absolute; left: 0; right: 0; bottom: -0.15em; height: 1.25px;
-    background: currentColor; transform: scaleX(0); transform-origin: right center;
     transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
   }
   @media (hover: hover) and (pointer: fine) {
@@ -389,13 +382,11 @@
     .frame-code:focus-visible .frame-bars { opacity: 0; transform: translateX(-10px); }
     .frame-code:hover .frame-cta,
     .frame-code:focus-visible .frame-cta { opacity: 1; transform: none; }
-    .frame-code:hover .frame-cta-text::after,
-    .frame-code:focus-visible .frame-cta-text::after { transform: scaleX(1); transform-origin: left center; }
     .frame-code:hover .frame-cta-arrow,
     .frame-code:focus-visible .frame-cta-arrow { transform: translateX(3px); }
   }
   @media (prefers-reduced-motion: reduce) {
-    .frame-bars, .frame-cta, .frame-cta-arrow, .frame-cta-text::after { transition-duration: 0.001s; }
+    .frame-bars, .frame-cta, .frame-cta-arrow { transition-duration: 0.001s; }
     .frame-bars { transition: opacity 0.2s ease; }
     .frame-code:hover .frame-bars, .frame-code:focus-visible .frame-bars { transform: none; }
   }
