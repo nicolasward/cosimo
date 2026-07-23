@@ -1717,6 +1717,7 @@ if (stage && scroller && canvas && frame) {
   const elBars = frame.querySelector('.frame-bars');
   const elText = frame.querySelector('.frame-text');
   const elCode = frame.querySelector('.frame-code');   // barcode/CTA — a frame sibling of .frame-text now, so it needs the same per-card fade
+  const elCtaText = elCode ? elCode.querySelector('.frame-cta-text') : null;
   const concl  = document.querySelector('.conclusion');
   const mark   = document.querySelector('.cosimo-mark');
   const letters = mark ? Array.prototype.slice.call(mark.querySelectorAll('b')) : [];
@@ -1768,6 +1769,24 @@ if (stage && scroller && canvas && frame) {
       for (let i = 0; i < c.length; i++) c[i].textContent = i < locked ? p[i] : rnd();
       if (locked >= c.length) clearInterval(el._st);
     }, ms);
+  }
+  // The barcode -> CTA swap decrypts the label in the same cipher as the card
+  // titles, instead of a plain fade. Desktop + motion only; reduced-motion (and
+  // no-hover devices) just get the plain word fading in via CSS.
+  if (elCode && elCtaText && !mobile && !reduced){
+    const armCta = function (){
+      lockText(elCtaText, 'Start a project');   // (re)measure + freeze widths — font/resize safe
+      setCipher(elCtaText);                      // scramble, then...
+      decrypt(elCtaText);                        // ...resolve left to right
+    };
+    const restCta = function (){
+      clearInterval(elCtaText._st);
+      lockText(elCtaText, 'Start a project');    // settle to the plain word, ready to re-arm
+    };
+    elCode.addEventListener('mouseenter', armCta);
+    elCode.addEventListener('focus', armCta);
+    elCode.addEventListener('mouseleave', restCta);
+    elCode.addEventListener('blur', restCta);
   }
   function barcode(seed){
     let st = seed * 9301 + 49297;
